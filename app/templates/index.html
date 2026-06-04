@@ -1,246 +1,700 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Waste Prediction Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <style>
+        :root {
+            --bg-body: #0f1923;
+            --bg-card: #1a2634;
+            --bg-card-hover: #1e2d3d;
+            --bg-input: #0f1923;
+            --text-primary: #e8edf2;
+            --text-secondary: #8899aa;
+            --text-muted: #5a6a7a;
+            --border: #2a3a4a;
+            --accent: #00d4ff;
+            --accent-dim: rgba(0, 212, 255, 0.1);
+            --accent-glow: rgba(0, 212, 255, 0.25);
+            --green: #00e676;
+            --orange: #ff9100;
+            --red: #ff1744;
+            --shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+        }
+        [data-theme="light"] {
+            --bg-body: #f0f2f5;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f8f9fa;
+            --bg-input: #ffffff;
+            --text-primary: #1a2634;
+            --text-secondary: #5a6a7a;
+            --text-muted: #8899aa;
+            --border: #dde1e6;
+            --accent: #0066cc;
+            --accent-dim: rgba(0, 102, 204, 0.08);
+            --accent-glow: rgba(0, 102, 204, 0.15);
+            --green: #00a854;
+            --orange: #d97a00;
+            --red: #d50000;
+            --shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+        }
+        * { box-sizing: border-box; }
+        body {
+            background: var(--bg-body);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            transition: background 0.3s, color 0.3s;
+            min-height: 100vh;
+        }
+        ::selection { background: var(--accent); color: #fff; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-body); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        .navbar-custom {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 0;
+            box-shadow: var(--shadow);
+        }
+        .navbar-custom .brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .navbar-custom .brand .badge-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: inline-block;
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+        .theme-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            width: 38px; height: 38px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 1.1rem;
+        }
+        .theme-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            box-shadow: var(--shadow);
+            transition: 0.2s;
+            height: 100%;
+        }
+        .stat-card:hover { background: var(--bg-card-hover); }
+        .stat-card .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+        .stat-card .value {
+            font-size: 1.65rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.2;
+        }
+        .stat-card .sub {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.15rem;
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .panel-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .panel-body { padding: 1.5rem; }
+
+        .form-label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.04em; }
+        .form-select, .form-control {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+        .form-select:focus, .form-control:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+            background: var(--bg-input);
+            color: var(--text-primary);
+        }
+        .form-select option { background: var(--bg-card); color: var(--text-primary); }
+
+        .btn-accent {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            padding: 0.6rem 1.25rem;
+            transition: 0.2s;
+        }
+        .btn-accent:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 4px 15px var(--accent-glow); }
+        .btn-accent:active { transform: translateY(0); }
+        .btn-outline-accent {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            font-weight: 600;
+            padding: 0.6rem 1.25rem;
+            transition: 0.2s;
+        }
+        .btn-outline-accent:hover { background: var(--accent-dim); }
+
+        .result-display {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--accent);
+            font-variant-numeric: tabular-nums;
+            line-height: 1.1;
+        }
+        .result-unit { font-size: 1rem; color: var(--text-secondary); font-weight: 400; }
+
+        .chart-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .chart-box .chart-header {
+            padding: 0.85rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .chart-box .chart-body { padding: 0.5rem; }
+
+        .filter-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .filter-toggle {
+            padding: 0.85rem 1.25rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            font-size: 0.85rem;
+            user-select: none;
+        }
+        .filter-toggle:hover { background: var(--bg-card-hover); }
+        .filter-toggle .arrow { transition: transform 0.3s; }
+        .filter-toggle .arrow.open { transform: rotate(180deg); }
+        .filter-body { padding: 0 1.25rem 1.25rem; display: none; }
+        .filter-body.open { display: block; }
+
+        .spinner {
+            width: 20px; height: 20px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-overlay {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            color: var(--text-muted);
+            gap: 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .badge-stat {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .badge-stat.good { background: rgba(0, 230, 118, 0.12); color: var(--green); }
+        .badge-stat.mid { background: rgba(255, 145, 0, 0.12); color: var(--orange); }
+
+        @media (max-width: 768px) {
+            .stat-card .value { font-size: 1.25rem; }
+            .result-display { font-size: 1.8rem; }
+            .navbar-custom .brand { font-size: 1rem; }
+        }
+    </style>
 </head>
 <body>
-    <div class="container mt-4">
-        <h1 class="mb-4">Waste Prediction Dashboard</h1>
-        
-        <div class="row">
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h5>Make Prediction</h5>
+
+<nav class="navbar-custom">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-between">
+            <a href="#" class="brand">
+                <span class="badge-dot"></span>
+                Waste Prediction
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <span style="font-size:0.75rem;color:var(--text-muted)" id="liveDate"></span>
+                <button class="theme-btn" id="themeToggle" title="Toggle theme">&#9790;</button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<main class="container py-4">
+
+    <div class="row g-3 mb-4" id="statsRow">
+        <div class="col-6 col-md-3 col-xl">
+            <div class="stat-card">
+                <div class="label">Total Records</div>
+                <div class="value" id="statRecords">--</div>
+                <div class="sub">in sample</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl">
+            <div class="stat-card">
+                <div class="label">Avg Weight</div>
+                <div class="value" id="statAvgWeight">--</div>
+                <div class="sub">lbs per load</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl">
+            <div class="stat-card">
+                <div class="label">Max Weight</div>
+                <div class="value" id="statMaxWeight">--</div>
+                <div class="sub">lbs</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl">
+            <div class="stat-card">
+                <div class="label">Top Site</div>
+                <div class="value" id="statTopSite">--</div>
+                <div class="sub" id="statTopSiteSub">loads</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl">
+            <div class="stat-card">
+                <div class="label">Date Range</div>
+                <div class="value" id="statDateStart" style="font-size:1rem">--</div>
+                <div class="sub" id="statDateEnd">--</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-4">
+            <div class="panel">
+                <div class="panel-header">
+                    <span>Make a Prediction</span>
+                    <span class="badge-stat good">What-If</span>
+                </div>
+                <div class="panel-body">
+                    <div class="mb-3">
+                        <label class="form-label">Load Type</label>
+                        <select class="form-select" id="loadType"><option value="">Select...</option></select>
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">Load Type:</label>
-                            <select class="form-select" id="loadType">
-                                <option value="">Select...</option>
-                            </select>
+                    <div class="mb-3">
+                        <label class="form-label">Drop-off Site</label>
+                        <select class="form-select" id="dropoffSite"><option value="">Select...</option></select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Route Type</label>
+                        <select class="form-select" id="routeType"><option value="">Select...</option></select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Hour of Day</label>
+                        <input type="range" class="form-range" id="hourSlider" min="0" max="23" value="12">
+                        <div class="d-flex justify-content-between" style="font-size:0.7rem;color:var(--text-muted)">
+                            <span>00:00</span>
+                            <span id="hourLabel">12:00</span>
+                            <span>23:00</span>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Drop-off Site:</label>
-                            <select class="form-select" id="dropoffSite">
-                                <option value="">Select...</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Route Type:</label>
-                            <select class="form-select" id="routeType">
-                                <option value="">Select...</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Hour (0-23):</label>
-                            <input type="number" class="form-control" id="hour" min="0" max="23" value="12">
-                        </div>
-                        <button class="btn btn-primary w-100" id="predictBtn">Predict Weight</button>
+                    </div>
+                    <button class="btn btn-accent w-100" id="predictBtn">Predict Weight</button>
+                    <div class="text-center mt-3 pt-3" style="border-top:1px solid var(--border)" id="predictionResult">
+                        <div class="result-display" id="predictionValue">--</div>
+                        <div class="result-unit">estimated weight (lbs)</div>
                     </div>
                 </div>
             </div>
-            
-            <div class="col-md-8">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5>Prediction Result</h5>
-                            </div>
-                            <div class="card-body text-center" id="predictionResult">
-                                <div class="display-4" id="predictionValue">--</div>
-                                <small>lbs</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5>Model Info</h5>
-                            </div>
-                            <div class="card-body" id="modelInfo">
-                                <p>Loading model information...</p>
-                            </div>
-                        </div>
-                    </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="panel">
+                <div class="panel-header">
+                    <span>Feature Importance</span>
+                    <span style="font-size:0.75rem;color:var(--text-muted)" id="modelType">Random Forest</span>
                 </div>
-                
-                <div class="row mt-4">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5>Weight Distribution (Sample)</h5>
-                            </div>
-                            <div class="card-body">
-                                <div id="weightChart" style="height: 300px;"></div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="panel-body" id="featureImportanceChart" style="height:300px;">
+                    <div class="loading-overlay"><span class="spinner"></span> Loading features...</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Wait for the DOM to load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize dropdowns with data from the API
-            initDropdowns();
-            // Load initial chart
-            loadSampleChart();
-            // Load model info
-            loadModelInfo();
-            // Add event listener for prediction
-            document.getElementById('predictBtn').addEventListener('click', makePrediction);
-        });
+    <div class="filter-section mb-4">
+        <div class="filter-toggle" id="filterToggle">
+            <span>&#9776; Data Filters</span>
+            <span class="arrow" id="filterArrow">&#9660;</span>
+        </div>
+        <div class="filter-body" id="filterBody">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">From Date</label>
+                    <input type="date" class="form-control" id="filterDateFrom">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">To Date</label>
+                    <input type="date" class="form-control" id="filterDateTo">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Load Type</label>
+                    <select class="form-select" id="filterLoadType"><option value="">All</option></select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Drop-off</label>
+                    <select class="form-select" id="filterDropoff"><option value="">All</option></select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-accent w-100" id="filterApply">Update Charts</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        // Function to initialize dropdowns by fetching from the API
-        async function initDropdowns() {
-            try {
-                const response = await fetch('/get-options');
-                const data = await response.json();
-                
-                // Populate load type dropdown
-                const loadTypeSelect = document.getElementById('loadType');
-                loadTypeSelect.innerHTML = '<option value="">Select...</option>' + 
-                    data.load_types.map(type => `<option value="${type}">${type}</option>`).join('');
-                
-                // Populate drop-off site dropdown
-                const dropoffSiteSelect = document.getElementById('dropoffSite');
-                dropoffSiteSelect.innerHTML = '<option value="">Select...</option>' + 
-                    data.dropoff_sites.map(site => `<option value="${site}">${site}</option>`).join('');
-                
-                // Populate route type dropdown
-                const routeTypeSelect = document.getElementById('routeType');
-                routeTypeSelect.innerHTML = '<option value="">Select...</option>' + 
-                    data.route_types.map(type => `<option value="${type}">${type}</option>`).join('');
-            } catch (error) {
-                console.error('Error loading options:', error);
-                // Fallback to static data if API fails
-                const loadTypes = ['GARBAGE COLLECTIONS', 'RECYCLING - SINGLE STREAM', 'ORGANICS', 'SWEEPING', 'BULK'];
-                const dropoffSites = ['TDS LANDFILL', 'ORGANICS BY GOSH', 'BALCONES RECYCLING', 'TDS - MRF', 'HORNSBY BEND'];
-                const routeTypes = ['GARBAGE COLLECTION', 'RECYCLING - SINGLE STREAM', 'YARD TRIMMINGS-ORGANICS', 'BULK', 'BRUSH'];
-                
-                const loadTypeSelect = document.getElementById('loadType');
-                loadTypes.forEach(type => {
-                    const option = document.createElement('option');
-                    option.value = type;
-                    option.textContent = type;
-                    loadTypeSelect.appendChild(option);
-                });
-                
-                const dropoffSiteSelect = document.getElementById('dropoffSite');
-                dropoffSites.forEach(site => {
-                    const option = document.createElement('option');
-                    option.value = site;
-                    option.textContent = site;
-                    dropoffSiteSelect.appendChild(option);
-                });
-                
-                const routeTypeSelect = document.getElementById('routeType');
-                routeTypes.forEach(type => {
-                    const option = document.createElement('option');
-                    option.value = type;
-                    option.textContent = type;
-                    routeTypeSelect.appendChild(option);
-                });
-            }
-        }
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="chart-box">
+                <div class="chart-header">
+                    <span>Actual vs Predicted</span>
+                    <span style="font-size:0.7rem;color:var(--text-muted)">scatter</span>
+                </div>
+                <div class="chart-body" id="actualVsPredictedChart" style="height:320px;">
+                    <div class="loading-overlay"><span class="spinner"></span> Loading chart...</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="chart-box">
+                <div class="chart-header">
+                    <span>Weight Distribution</span>
+                    <span style="font-size:0.7rem;color:var(--text-muted)">histogram</span>
+                </div>
+                <div class="chart-body" id="weightDistributionChart" style="height:320px;">
+                    <div class="loading-overlay"><span class="spinner"></span> Loading chart...</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        // Function to make a prediction
-        async function makePrediction() {
-            const loadType = document.getElementById('loadType').value;
-            const dropoffSite = document.getElementById('dropoffSite').value;
-            const routeType = document.getElementById('routeType').value;
-            const hour = parseInt(document.getElementById('hour').value);
-            
-            // Validate required fields
-            if (!loadType || !dropoffSite || !routeType) {
-                alert('Please select Load Type, Drop-off Site, and Route Type');
-                return;
-            }
-            
-            // Prepare input data
-            const inputData = {
-                loadType: loadType,
-                dropoffSite: dropoffSite,
-                routeType: routeType,
-                loadHour: hour,
-                reportDayOfWeek: 1, // Default to Monday (0=Sunday, 1=Monday, etc.)
-                reportMonth: 6,     // Default to June
-                reportYear: 2020    // Default year
-            };
-            
-            try {
-                const response = await fetch('/predict', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(inputData)
-                });
-                
-                const result = await response.json();
-                
-                if (result.status === 'success') {
-                    document.getElementById('predictionValue').textContent = 
-                        result.prediction.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                } else {
-                    alert('Prediction error: ' + result.error);
-                }
-            } catch (error) {
-                alert('Error making prediction: ' + error.message);
-            }
-        }
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="chart-box">
+                <div class="chart-header">
+                    <span>Daily Average Weight</span>
+                    <span style="font-size:0.7rem;color:var(--text-muted)">by day of week</span>
+                </div>
+                <div class="chart-body" id="dailyTrendChart" style="height:320px;">
+                    <div class="loading-overlay"><span class="spinner"></span> Loading chart...</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="chart-box">
+                <div class="chart-header">
+                    <span>Route Type Distribution</span>
+                    <span style="font-size:0.7rem;color:var(--text-muted)">top routes</span>
+                </div>
+                <div class="chart-body" id="routeDistributionChart" style="height:320px;">
+                    <div class="loading-overlay"><span class="spinner"></span> Loading chart...</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        // Function to load a sample chart
-        function loadSampleChart() {
-            // Create a simple sample chart
-            const data = [{
-                x: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                y: [12000, 13500, 11000, 14200, 15800, 9500, 8000],
-                type: 'bar',
-                marker: {color: '#007bff'}
-            }];
-            
-            const layout = {
-                title: 'Daily Waste Weight (Sample Data)',
-                yaxis: {title: 'Weight (lbs)'},
-                xaxis: {title: 'Day of Week'}
-            };
-            
-            Plotly.newPlot('weightChart', data, layout, {responsive: true});
-        }
+</main>
 
-        // Function to load model information
-        async function loadModelInfo() {
-            try {
-                const response = await fetch('/model-info');
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    let html = `<p><strong>Model Type:</strong> ${data.model_type}</p>`;
-                    html += `<p><strong>Accuracy (R²):</strong> ${data.feature_importance[0] ? data.feature_importance[0].importance.toFixed(3) : 'N/A'}</p>`;
-                    html += `<p><strong>Top Features:</strong></p><ol>`;
-                    data.feature_importance.slice(0, 3).forEach(item => {
-                        html += `<li>${item.feature}: ${(item.importance * 100).toFixed(1)}%</li>`;
-                    });
-                    html += '</ol>';
-                    document.getElementById('modelInfo').innerHTML = html;
-                } else {
-                    document.getElementById('modelInfo').innerHTML = '<p>Error loading model information</p>';
-                }
-            } catch (error) {
-                console.error('Error loading model info:', error);
-                document.getElementById('modelInfo').innerHTML = '<p>Error loading model information</p>';
-            }
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const PlotlyLayout = (title, xTitle, yTitle) => ({
+        title: { text: title || '', font: { size: 13, color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim() } },
+        xaxis: { title: xTitle || '', gridcolor: getComputedStyle(document.body).getPropertyValue('--border').trim(), color: getComputedStyle(document.body).getPropertyValue('--text-secondary').trim(), zeroline: false },
+        yaxis: { title: yTitle || '', gridcolor: getComputedStyle(document.body).getPropertyValue('--border').trim(), color: getComputedStyle(document.body).getPropertyValue('--text-secondary').trim(), zeroline: false },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        margin: { l: 50, r: 20, t: 30, b: 40 },
+        font: { color: getComputedStyle(document.body).getPropertyValue('--text-secondary').trim(), size: 11 },
+        hovermode: 'closest',
+        showlegend: false
+    });
+
+    function accent(alpha) { const c = getComputedStyle(document.body).getPropertyValue('--accent').trim(); return `rgba(${parseInt(c.slice(1,3),16)},${parseInt(c.slice(3,5),16)},${parseInt(c.slice(5,7),16)},${alpha})`; }
+
+    document.getElementById('liveDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+
+    document.getElementById('themeToggle').addEventListener('click', () => {
+        const html = document.documentElement;
+        const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        document.getElementById('themeToggle').innerHTML = next === 'dark' ? '&#9790;' : '&#9789;';
+        redrawAllCharts();
+    });
+
+    const hourSlider = document.getElementById('hourSlider');
+    const hourLabel = document.getElementById('hourLabel');
+    hourSlider.addEventListener('input', () => {
+        const h = String(hourSlider.value).padStart(2, '0');
+        hourLabel.textContent = h + ':00';
+    });
+
+    document.getElementById('filterToggle').addEventListener('click', () => {
+        document.getElementById('filterBody').classList.toggle('open');
+        document.getElementById('filterArrow').classList.toggle('open');
+    });
+    document.getElementById('filterBody').classList.add('open');
+    document.getElementById('filterArrow').classList.add('open');
+
+    async function fetchJSON(url, body) {
+        const opts = { headers: { 'Content-Type': 'application/json' } };
+        if (body) { opts.method = 'POST'; opts.body = JSON.stringify(body); }
+        const r = await fetch(url, opts);
+        return r.json();
+    }
+
+    function showLoading(id) {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<div class="loading-overlay"><span class="spinner"></span> Loading...</div>';
+    }
+
+    async function loadStats() {
+        try {
+            const d = await fetchJSON('/dashboard-stats');
+            if (d.status !== 'success') return;
+            document.getElementById('statRecords').textContent = d.total_records.toLocaleString();
+            document.getElementById('statAvgWeight').textContent = d.avg_weight.toLocaleString(undefined, {maximumFractionDigits: 0}) + ' lbs';
+            document.getElementById('statMaxWeight').textContent = d.max_weight.toLocaleString(undefined, {maximumFractionDigits: 0}) + ' lbs';
+            document.getElementById('statTopSite').textContent = d.top_dropoff_site;
+            document.getElementById('statTopSiteSub').textContent = d.top_site_count.toLocaleString() + ' loads';
+            document.getElementById('statDateStart').textContent = d.date_range.start;
+            document.getElementById('statDateEnd').textContent = d.date_range.end;
+        } catch (e) { console.error('Stats error:', e); }
+    }
+
+    async function loadFeatureImportance() {
+        try {
+            const d = await fetchJSON('/model-info');
+            if (d.status !== 'success') return;
+            document.getElementById('modelType').textContent = d.model_type;
+            const items = d.feature_importance;
+            const labels = items.map(i => i.feature.replace(/_/g, ' ')).reverse();
+            const values = items.map(i => i.importance).reverse();
+            const colors = items.map((_, idx) => accent(0.3 + 0.7 * (idx / items.length))).reverse();
+            const data = [{ x: values, y: labels, type: 'bar', orientation: 'h', marker: { color: colors }, hovertemplate: '%{x:.1%}<extra></extra>' }];
+            const layout = { ...PlotlyLayout(), xaxis: { ...PlotlyLayout().xaxis, title: 'Importance', tickformat: '.0%' }, yaxis: { ...PlotlyLayout().yaxis, autorange: 'reversed' }, margin: { l: 120, r: 20, t: 5, b: 30 }, height: 260 };
+            await Plotly.react('featureImportanceChart', data, layout, { responsive: true, displayModeBar: false });
+        } catch (e) { console.error('Feature importance error:', e); }
+    }
+
+    async function loadActualVsPredicted() {
+        try {
+            const filters = gatherFilters();
+            const d = await fetchJSON('/predict-filtered', filters);
+            if (d.status !== 'success' || !d.data.length) return;
+            const actuals = d.data.map(i => i.actual);
+            const preds = d.data.map(i => i.predicted);
+            const maxVal = Math.max(...actuals, ...preds) * 1.05;
+            const data = [
+                { x: actuals, y: preds, mode: 'markers', type: 'scatter', marker: { color: accent(0.6), size: 5, line: { color: accent(0.8), width: 0.5 } }, hovertemplate: 'Actual: %{x:,.0f} lbs<br>Predicted: %{y:,.0f} lbs<extra></extra>' },
+                { x: [0, maxVal], y: [0, maxVal], mode: 'lines', line: { color: getComputedStyle(document.body).getPropertyValue('--text-muted').trim(), dash: 'dash', width: 1 }, hoverinfo: 'skip' }
+            ];
+            const layout = { ...PlotlyLayout('', 'Actual Weight (lbs)', 'Predicted Weight (lbs)'), xaxis: { ...PlotlyLayout().xaxis, range: [0, maxVal] }, yaxis: { ...PlotlyLayout().yaxis, range: [0, maxVal] } };
+            await Plotly.react('actualVsPredictedChart', data, layout, { responsive: true, displayModeBar: false });
+        } catch (e) { console.error('Actual vs Predicted error:', e); }
+    }
+
+    async function loadWeightDistribution() {
+        try {
+            const filters = gatherFilters();
+            const d = await fetchJSON('/filter-data', filters);
+            if (d.status !== 'success' || !d.data.length) return;
+            const weights = d.data.map(i => parseFloat(i.loadWeight)).filter(w => w > 0 && w <= 50000);
+            if (!weights.length) return;
+            const data = [{ x: weights, type: 'histogram', marker: { color: accent(0.5), line: { color: accent(0.8), width: 0.5 } }, hovertemplate: 'Weight: %{x:,.0f} lbs<br>Count: %{y}<extra></extra>' }];
+            const layout = { ...PlotlyLayout('', 'Weight (lbs)', 'Frequency'), bargap: 0.05 };
+            await Plotly.react('weightDistributionChart', data, layout, { responsive: true, displayModeBar: false });
+        } catch (e) { console.error('Weight distribution error:', e); }
+    }
+
+    async function loadDailyTrend() {
+        try {
+            const d = await fetchJSON('/dashboard-stats');
+            if (d.status !== 'success') return;
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            const values = days.map(day => d.daily_avg[day] || 0);
+            const colors = values.map(v => v > 0 ? accent(0.6) : 'rgba(0,0,0,0)');
+            const data = [{ x: days.map((_, i) => i), y: values, type: 'scatter', mode: 'lines+markers', line: { color: accent(0.7), width: 2, shape: 'spline' }, marker: { color: accent(1), size: 6 }, fill: 'tozeroy', fillcolor: accent(0.08), hovertemplate: '%{x}<br>%{y:,.0f} lbs<extra></extra>' }];
+            const layout = { ...PlotlyLayout('', '', 'Avg Weight (lbs)'), xaxis: { ...PlotlyLayout().xaxis, tickvals: [0, 1, 2, 3, 4, 5, 6], ticktext: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] } };
+            await Plotly.react('dailyTrendChart', data, layout, { responsive: true, displayModeBar: false });
+        } catch (e) { console.error('Daily trend error:', e); }
+    }
+
+    async function loadRouteDistribution() {
+        try {
+            const d = await fetchJSON('/dashboard-stats');
+            if (d.status !== 'success') return;
+            const entries = Object.entries(d.route_distribution);
+            const labels = entries.map(e => e[0]);
+            const values = entries.map(e => e[1]);
+            const total = values.reduce((a, b) => a + b, 0);
+            const pct = labels.map((l, i) => `${l}<br>${(values[i]/total*100).toFixed(1)}%`);
+            const colors = ['#00d4ff', '#00e676', '#ff9100', '#ff1744', '#aa66ff', '#ffd700'];
+            const data = [{ labels, values, type: 'pie', text: pct, textinfo: 'none', hoverinfo: 'label+percent', marker: { colors }, sort: false, hole: 0.45 }];
+            const layout = { ...PlotlyLayout(), showlegend: true, legend: { orientation: 'h', y: -0.15, font: { size: 9, color: getComputedStyle(document.body).getPropertyValue('--text-secondary').trim() } }, margin: { l: 10, r: 10, t: 5, b: 60 } };
+            await Plotly.react('routeDistributionChart', data, layout, { responsive: true, displayModeBar: false });
+        } catch (e) { console.error('Route distribution error:', e); }
+    }
+
+    function gatherFilters() {
+        return {
+            date_from: document.getElementById('filterDateFrom').value || null,
+            date_to: document.getElementById('filterDateTo').value || null,
+            load_type: document.getElementById('filterLoadType').value || null,
+            dropoff_site: document.getElementById('filterDropoff').value || null
+        };
+    }
+
+    let chartLoaders = [];
+
+    function loadAllCharts() {
+        chartLoaders = [
+            loadActualVsPredicted(),
+            loadWeightDistribution(),
+            loadDailyTrend(),
+            loadRouteDistribution(),
+            loadFeatureImportance()
+        ];
+        showLoading('actualVsPredictedChart');
+        showLoading('weightDistributionChart');
+        showLoading('dailyTrendChart');
+        showLoading('routeDistributionChart');
+    }
+
+    async function redrawAllCharts() {
+        await loadAllCharts();
+    }
+
+    async function initDropdowns() {
+        try {
+            const d = await fetchJSON('/get-options');
+            ['loadType', 'filterLoadType'].forEach(id => {
+                const sel = document.getElementById(id);
+                if (id === 'filterLoadType') sel.innerHTML = '<option value="">All</option>';
+                d.load_types.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; sel.appendChild(o); });
+            });
+            ['dropoffSite', 'filterDropoff'].forEach(id => {
+                const sel = document.getElementById(id);
+                if (id === 'filterDropoff') sel.innerHTML = '<option value="">All</option>';
+                d.dropoff_sites.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sel.appendChild(o); });
+            });
+            const routeSel = document.getElementById('routeType');
+            d.route_types.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; routeSel.appendChild(o); });
+        } catch (e) {
+            console.error('Dropdown init error, using fallback:', e);
+            ['GARBAGE COLLECTIONS','RECYCLING - SINGLE STREAM','ORGANICS','SWEEPING','BULK'].forEach(t => {
+                const o = document.createElement('option'); o.value = t; o.textContent = t;
+                document.getElementById('loadType').appendChild(o.cloneNode(true));
+                document.getElementById('filterLoadType').appendChild(o.cloneNode(true));
+            });
+            ['TDS LANDFILL','ORGANICS BY GOSH','BALCONES RECYCLING','TDS - MRF','HORNSBY BEND'].forEach(s => {
+                const o = document.createElement('option'); o.value = s; o.textContent = s;
+                document.getElementById('dropoffSite').appendChild(o.cloneNode(true));
+                document.getElementById('filterDropoff').appendChild(o.cloneNode(true));
+            });
+            ['GARBAGE COLLECTION','RECYCLING - SINGLE STREAM','YARD TRIMMINGS-ORGANICS','BULK','BRUSH'].forEach(t => {
+                const o = document.createElement('option'); o.value = t; o.textContent = t;
+                document.getElementById('routeType').appendChild(o);
+            });
         }
-    </script>
+    }
+
+    document.getElementById('predictBtn').addEventListener('click', async () => {
+        const loadType = document.getElementById('loadType').value;
+        const dropoffSite = document.getElementById('dropoffSite').value;
+        const routeType = document.getElementById('routeType').value;
+        if (!loadType || !dropoffSite || !routeType) { alert('Please fill in all fields'); return; }
+        document.getElementById('predictionValue').textContent = '...';
+        try {
+            const r = await fetchJSON('/predict', {
+                loadType, dropoffSite, routeType, loadHour: parseInt(hourSlider.value),
+                reportDayOfWeek: 1, reportMonth: 6, reportYear: 2020
+            });
+            if (r.status === 'success') {
+                document.getElementById('predictionValue').textContent = r.prediction.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) + ' lbs';
+                document.getElementById('predictionValue').style.color = '';
+            } else {
+                document.getElementById('predictionValue').textContent = 'Error';
+                alert('Prediction error: ' + r.error);
+            }
+        } catch (e) {
+            document.getElementById('predictionValue').textContent = 'Error';
+            alert('Request failed: ' + e.message);
+        }
+    });
+
+    document.getElementById('filterApply').addEventListener('click', () => {
+        showLoading('actualVsPredictedChart');
+        showLoading('weightDistributionChart');
+        loadActualVsPredicted();
+        loadWeightDistribution();
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        await initDropdowns();
+        await loadStats();
+        await loadAllCharts();
+    });
+</script>
 </body>
 </html>

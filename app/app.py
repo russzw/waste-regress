@@ -140,28 +140,29 @@ def predict_filtered():
         if filters.get('route_type'):
             df = df[df['routeType'] == filters['route_type']]
         
-        # Limit to a reasonable number for plotting (e.g., 100 points)
-        # We'll take a sample if there are too many points
+        # Limit to a reasonable number for plotting
         if len(df) > 100:
             df = df.sample(n=100, random_state=42)
         
-        # Preprocess the data
+        # Preprocess the data (may filter out invalid rows)
         X, y = preprocessor.transform(df)
         
         # Make predictions
         predictions = model.predict(X)
         
-        # Prepare result
+        # Align rows with predictions using X's index
         result = []
-        for idx, row in df.iterrows():
-            result.append({
-                'actual': float(y.loc[idx]) if idx in y.index else 0.0,
-                'predicted': float(predictions[idx]),
-                'date': str(row['reportDate']),
-                'loadType': str(row['loadType']),
-                'dropoffSite': str(row['dropoffSite']),
-                'routeType': str(row['routeType'])
-            })
+        for i, orig_idx in enumerate(X.index):
+            if orig_idx in df.index:
+                row = df.loc[orig_idx]
+                result.append({
+                    'actual': float(y.iloc[i]) if i < len(y) else 0.0,
+                    'predicted': float(predictions[i]),
+                    'date': str(row['reportDate']),
+                    'loadType': str(row['loadType']),
+                    'dropoffSite': str(row['dropoffSite']),
+                    'routeType': str(row['routeType'])
+                })
         
         return jsonify({
             'data': result,
@@ -187,6 +188,46 @@ def get_options():
         
         return jsonify(options)
     
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/dashboard-stats')
+def dashboard_stats():
+    try:
+        df = pd.read_csv(os.path.join(os.path.dirname(__file__), '..', 'largeClean.csv'), nrows=50000)
+        df['loadWeight'] = pd.to_numeric(df['loadWeight'], errors='coerce')
+        df = df[(df['loadWeight'] >= 0) & (df['loadWeight'] <= 50000)]
+
+        total = len(df)
+        avg_weight = float(df['loadWeight'].mean())
+        max_weight = float(df['loadWeight'].max())
+        top_site = str(df['dropoffSite'].value_counts().index[0]) if 'dropoffSite' in df.columns else 'N/A'
+        top_site_count = int(df['dropoffSite'].value_counts().iloc[0]) if 'dropoffSite' in df.columns else 0
+
+        df['reportDate'] = pd.to_datetime(df['reportDate'], errors='coerce')
+        df['dayOfWeek'] = df['reportDate'].dt.day_name()
+
+        day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        daily_avg = df.groupby('dayOfWeek')['loadWeight'].mean().reindex(day_order)
+        daily_avg = {k: (float(v) if pd.notna(v) else 0) for k, v in daily_avg.items()}
+
+        route_dist = df['routeType'].value_counts().head(6)
+        route_dist = {k: int(v) for k, v in route_dist.items()}
+
+        return jsonify({
+            'total_records': total,
+            'avg_weight': round(avg_weight, 1),
+            'max_weight': round(max_weight, 1),
+            'top_dropoff_site': top_site,
+            'top_site_count': top_site_count,
+            'date_range': {
+                'start': str(df['reportDate'].min().date()) if pd.notna(df['reportDate'].min()) else 'N/A',
+                'end': str(df['reportDate'].max().date()) if pd.notna(df['reportDate'].max()) else 'N/A'
+            },
+            'daily_avg': daily_avg,
+            'route_distribution': route_dist,
+            'status': 'success'
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
