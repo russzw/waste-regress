@@ -1,0 +1,246 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waste Prediction Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="mb-4">Waste Prediction Dashboard</h1>
+        
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Make Prediction</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Load Type:</label>
+                            <select class="form-select" id="loadType">
+                                <option value="">Select...</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Drop-off Site:</label>
+                            <select class="form-select" id="dropoffSite">
+                                <option value="">Select...</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Route Type:</label>
+                            <select class="form-select" id="routeType">
+                                <option value="">Select...</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Hour (0-23):</label>
+                            <input type="number" class="form-control" id="hour" min="0" max="23" value="12">
+                        </div>
+                        <button class="btn btn-primary w-100" id="predictBtn">Predict Weight</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-8">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Prediction Result</h5>
+                            </div>
+                            <div class="card-body text-center" id="predictionResult">
+                                <div class="display-4" id="predictionValue">--</div>
+                                <small>lbs</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Model Info</h5>
+                            </div>
+                            <div class="card-body" id="modelInfo">
+                                <p>Loading model information...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Weight Distribution (Sample)</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="weightChart" style="height: 300px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Wait for the DOM to load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize dropdowns with data from the API
+            initDropdowns();
+            // Load initial chart
+            loadSampleChart();
+            // Load model info
+            loadModelInfo();
+            // Add event listener for prediction
+            document.getElementById('predictBtn').addEventListener('click', makePrediction);
+        });
+
+        // Function to initialize dropdowns by fetching from the API
+        async function initDropdowns() {
+            try {
+                const response = await fetch('/get-options');
+                const data = await response.json();
+                
+                // Populate load type dropdown
+                const loadTypeSelect = document.getElementById('loadType');
+                loadTypeSelect.innerHTML = '<option value="">Select...</option>' + 
+                    data.load_types.map(type => `<option value="${type}">${type}</option>`).join('');
+                
+                // Populate drop-off site dropdown
+                const dropoffSiteSelect = document.getElementById('dropoffSite');
+                dropoffSiteSelect.innerHTML = '<option value="">Select...</option>' + 
+                    data.dropoff_sites.map(site => `<option value="${site}">${site}</option>`).join('');
+                
+                // Populate route type dropdown
+                const routeTypeSelect = document.getElementById('routeType');
+                routeTypeSelect.innerHTML = '<option value="">Select...</option>' + 
+                    data.route_types.map(type => `<option value="${type}">${type}</option>`).join('');
+            } catch (error) {
+                console.error('Error loading options:', error);
+                // Fallback to static data if API fails
+                const loadTypes = ['GARBAGE COLLECTIONS', 'RECYCLING - SINGLE STREAM', 'ORGANICS', 'SWEEPING', 'BULK'];
+                const dropoffSites = ['TDS LANDFILL', 'ORGANICS BY GOSH', 'BALCONES RECYCLING', 'TDS - MRF', 'HORNSBY BEND'];
+                const routeTypes = ['GARBAGE COLLECTION', 'RECYCLING - SINGLE STREAM', 'YARD TRIMMINGS-ORGANICS', 'BULK', 'BRUSH'];
+                
+                const loadTypeSelect = document.getElementById('loadType');
+                loadTypes.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type;
+                    option.textContent = type;
+                    loadTypeSelect.appendChild(option);
+                });
+                
+                const dropoffSiteSelect = document.getElementById('dropoffSite');
+                dropoffSites.forEach(site => {
+                    const option = document.createElement('option');
+                    option.value = site;
+                    option.textContent = site;
+                    dropoffSiteSelect.appendChild(option);
+                });
+                
+                const routeTypeSelect = document.getElementById('routeType');
+                routeTypes.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type;
+                    option.textContent = type;
+                    routeTypeSelect.appendChild(option);
+                });
+            }
+        }
+
+        // Function to make a prediction
+        async function makePrediction() {
+            const loadType = document.getElementById('loadType').value;
+            const dropoffSite = document.getElementById('dropoffSite').value;
+            const routeType = document.getElementById('routeType').value;
+            const hour = parseInt(document.getElementById('hour').value);
+            
+            // Validate required fields
+            if (!loadType || !dropoffSite || !routeType) {
+                alert('Please select Load Type, Drop-off Site, and Route Type');
+                return;
+            }
+            
+            // Prepare input data
+            const inputData = {
+                loadType: loadType,
+                dropoffSite: dropoffSite,
+                routeType: routeType,
+                loadHour: hour,
+                reportDayOfWeek: 1, // Default to Monday (0=Sunday, 1=Monday, etc.)
+                reportMonth: 6,     // Default to June
+                reportYear: 2020    // Default year
+            };
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(inputData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    document.getElementById('predictionValue').textContent = 
+                        result.prediction.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                } else {
+                    alert('Prediction error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error making prediction: ' + error.message);
+            }
+        }
+
+        // Function to load a sample chart
+        function loadSampleChart() {
+            // Create a simple sample chart
+            const data = [{
+                x: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                y: [12000, 13500, 11000, 14200, 15800, 9500, 8000],
+                type: 'bar',
+                marker: {color: '#007bff'}
+            }];
+            
+            const layout = {
+                title: 'Daily Waste Weight (Sample Data)',
+                yaxis: {title: 'Weight (lbs)'},
+                xaxis: {title: 'Day of Week'}
+            };
+            
+            Plotly.newPlot('weightChart', data, layout, {responsive: true});
+        }
+
+        // Function to load model information
+        async function loadModelInfo() {
+            try {
+                const response = await fetch('/model-info');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    let html = `<p><strong>Model Type:</strong> ${data.model_type}</p>`;
+                    html += `<p><strong>Accuracy (R²):</strong> ${data.feature_importance[0] ? data.feature_importance[0].importance.toFixed(3) : 'N/A'}</p>`;
+                    html += `<p><strong>Top Features:</strong></p><ol>`;
+                    data.feature_importance.slice(0, 3).forEach(item => {
+                        html += `<li>${item.feature}: ${(item.importance * 100).toFixed(1)}%</li>`;
+                    });
+                    html += '</ol>';
+                    document.getElementById('modelInfo').innerHTML = html;
+                } else {
+                    document.getElementById('modelInfo').innerHTML = '<p>Error loading model information</p>';
+                }
+            } catch (error) {
+                console.error('Error loading model info:', error);
+                document.getElementById('modelInfo').innerHTML = '<p>Error loading model information</p>';
+            }
+        }
+    </script>
+</body>
+</html>

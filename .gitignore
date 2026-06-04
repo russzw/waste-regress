@@ -1,0 +1,23 @@
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment
+venv/
+.env/
+
+# IDE
+.vscode/
+.idea/
+
+# Dataset (large files)
+largeClean.csv
+
+# Pickle models
+model/waste_predictor.pkl
+preprocessing/waste_preprocessor.pkl
+
+# OS files
+Thumbs.db
+.DS_Store
